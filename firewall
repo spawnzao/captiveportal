@@ -1,0 +1,123 @@
+#! /bin/bash
+
+echo -n "Carregando Variaveis...                       "
+        IP_INT="192.168.1.1"
+        IP_EXT="192.168.129.10"
+        IF_INT="enp0s8"
+        IF_EXT="enp0s3"
+echo "[OK]"
+
+echo -n "Habilitando roteamento...                     "
+        modprobe ip_conntrack_ftp
+        modprobe ip_nat_ftp
+        modprobe ipt_mark
+        modprobe ipt_MARK
+        modprobe nf_nat_sip
+        modprobe nf_conntrack_sip
+        echo 1 > /proc/sys/net/ipv4/ip_forward
+        echo 1 > /proc/sys/net/ipv4/tcp_syncookies
+        echo 1 > /proc/sys/net/ipv4/conf/all/accept_redirects
+        echo 1 > /proc/sys/net/ipv4/conf/all/rp_filter
+        echo 10 > /proc/sys/net/ipv4/route/gc_timeout
+echo "[OK]"
+
+echo -n "Limpando Regras...                            "
+        iptables -t filter -F
+        iptables -t filter -X
+        iptables -t nat -F
+        iptables -t nat -X
+        iptables -t mangle -F
+        iptables -t mangle -X
+echo "[OK]"
+
+echo -n "Habilitando Politicas Padroes...              "
+        iptables -P INPUT DROP
+        iptables -P FORWARD DROP
+        iptables -P OUTPUT DROP
+echo "[OK]"
+
+echo -n "Habilitando Interface Loopback...             "
+        iptables -I INPUT -i lo -j ACCEPT
+        iptables -I OUTPUT -o lo -j ACCEPT
+echo "[OK]"
+
+echo -n "Habilitando Mascaramento...                   "
+        iptables -t nat -A POSTROUTING -o $IF_EXT -j MASQUERADE
+echo "[OK]"
+
+echo -n "Habilitando Verificacao Estado Pacote...      "
+        iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+        iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+        iptables -A FORWARD -m state --state ESTABLISHED,RELATED -j ACCEPT
+echo "[OK]"
+
+
+echo -n "Habilitando Politicas da INPUT...             "
+	# iface externo
+        iptables -A INPUT -p tcp --dport 22 -i $IF_EXT -d $IP_EXT -j ACCEPT
+	# iface interno
+        iptables -A INPUT -p tcp --dport 53 -i $IF_INT -j ACCEPT
+        iptables -A INPUT -p udp --dport 53 -i $IF_INT -j ACCEPT
+        iptables -A INPUT -p tcp --dport 81 -i $IF_INT -j ACCEPT
+        iptables -A INPUT -p tcp --dport 3128 -i $IF_INT -j ACCEPT
+        iptables -A INPUT -p tcp --dport 3129 -i $IF_INT -j ACCEPT
+        # all
+	iptables -A INPUT -p icmp -j ACCEPT
+echo "[OK]"
+
+echo -n "Habilitando Redirecionamento do proxy...      "
+        # HTTP
+        iptables -t nat -A PREROUTING -i $IF_INT -p tcp --dport 20 -j REDIRECT --to-port 3128
+        iptables -t nat -A PREROUTING -i $IF_INT -p tcp --dport 21 -j REDIRECT --to-port 3128
+        iptables -t nat -A PREROUTING -i $IF_INT -p tcp --dport 23 -j REDIRECT --to-port 3128
+        iptables -t nat -A PREROUTING -i $IF_INT -p tcp --dport 25 -j REDIRECT --to-port 3128
+        iptables -t nat -A PREROUTING -i $IF_INT -p tcp --dport 80 -j REDIRECT --to-port 3128
+        iptables -t nat -A PREROUTING -i $IF_INT -p tcp --dport 110 -j REDIRECT --to-port 3128
+        iptables -t nat -A PREROUTING -i $IF_INT -p tcp --dport 135 -j REDIRECT --to-port 3128
+        iptables -t nat -A PREROUTING -i $IF_INT -p tcp --dport 143 -j REDIRECT --to-port 3128
+        iptables -t nat -A PREROUTING -i $IF_INT -p tcp --dport 587 -j REDIRECT --to-port 3128
+        iptables -t nat -A PREROUTING -i $IF_INT -p tcp --dport 1935 -j REDIRECT --to-port 3128
+        iptables -t nat -A PREROUTING -i $IF_INT -p tcp --dport 2184 -j REDIRECT --to-port 3128
+        iptables -t nat -A PREROUTING -i $IF_INT -p tcp --dport 2631 -j REDIRECT --to-port 3128
+        iptables -t nat -A PREROUTING -i $IF_INT -p tcp --dport 3289 -j REDIRECT --to-port 3128
+        iptables -t nat -A PREROUTING -i $IF_INT -p tcp --dport 3456 -j REDIRECT --to-port 3128
+        iptables -t nat -A PREROUTING -i $IF_INT -p tcp --dport 3494 -j REDIRECT --to-port 3128
+        iptables -t nat -A PREROUTING -i $IF_INT -p tcp --dport 3690 -j REDIRECT --to-port 3128
+        iptables -t nat -A PREROUTING -i $IF_INT -p tcp --dport 5004 -j REDIRECT --to-port 3128
+        iptables -t nat -A PREROUTING -i $IF_INT -p tcp --dport 8999 -j REDIRECT --to-port 3128
+        iptables -t nat -A PREROUTING -i $IF_INT -p tcp --dport 23000 -j REDIRECT --to-port 3128
+        # HTTPS
+        iptables -t nat -A PREROUTING -i $IF_INT -p tcp --dport 22 -j REDIRECT --to-port 3129
+        iptables -t nat -A PREROUTING -i $IF_INT -p tcp --dport 443 -j REDIRECT --to-port 3129
+        iptables -t nat -A PREROUTING -i $IF_INT -p tcp --dport 465 -j REDIRECT --to-port 3129
+        iptables -t nat -A PREROUTING -i $IF_INT -p tcp --dport 563 -j REDIRECT --to-port 3129
+        iptables -t nat -A PREROUTING -i $IF_INT -p tcp --dport 587 -j REDIRECT --to-port 3129
+        iptables -t nat -A PREROUTING -i $IF_INT -p tcp --dport 636 -j REDIRECT --to-port 3129
+        iptables -t nat -A PREROUTING -i $IF_INT -p tcp --dport 695 -j REDIRECT --to-port 3129
+        iptables -t nat -A PREROUTING -i $IF_INT -p tcp --dport 989 -j REDIRECT --to-port 3129
+        iptables -t nat -A PREROUTING -i $IF_INT -p tcp --dport 990 -j REDIRECT --to-port 3129
+        iptables -t nat -A PREROUTING -i $IF_INT -p tcp --dport 992 -j REDIRECT --to-port 3129
+        iptables -t nat -A PREROUTING -i $IF_INT -p tcp --dport 993 -j REDIRECT --to-port 3129
+        iptables -t nat -A PREROUTING -i $IF_INT -p tcp --dport 995 -j REDIRECT --to-port 3129
+        iptables -t nat -A PREROUTING -i $IF_INT -p tcp --dport 2083 -j REDIRECT --to-port 3129
+        iptables -t nat -A PREROUTING -i $IF_INT -p tcp --dport 2087 -j REDIRECT --to-port 3129
+        iptables -t nat -A PREROUTING -i $IF_INT -p tcp --dport 2096 -j REDIRECT --to-port 3129
+        iptables -t nat -A PREROUTING -i $IF_INT -p tcp --dport 2222 -j REDIRECT --to-port 3129
+        iptables -t nat -A PREROUTING -i $IF_INT -p tcp --dport 2484 -j REDIRECT --to-port 3129
+        iptables -t nat -A PREROUTING -i $IF_INT -p tcp --dport 5222 -j REDIRECT --to-port 3129
+        iptables -t nat -A PREROUTING -i $IF_INT -p tcp --dport 5223 -j REDIRECT --to-port 3129
+        iptables -t nat -A PREROUTING -i $IF_INT -p tcp --dport 6619 -j REDIRECT --to-port 3129
+        iptables -t nat -A PREROUTING -i $IF_INT -p tcp --dport 6679 -j REDIRECT --to-port 3129
+        iptables -t nat -A PREROUTING -i $IF_INT -p tcp --dport 6697 -j REDIRECT --to-port 3129
+echo "[OK]"
+
+echo -n "Habilitando Politicas da OUTPUT...            "
+        iptables -A OUTPUT -p icmp -j ACCEPT
+        iptables -A OUTPUT -j ACCEPT
+echo "[OK]"
+
+
+echo -n "Habilitando Politicas da FOWARD...            "
+        # ICMP
+        iptables -A FORWARD -p icmp -j ACCEPT
+echo "[OK]"
