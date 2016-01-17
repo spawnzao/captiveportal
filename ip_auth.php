@@ -32,7 +32,5 @@ while( !feof(STDIN)){
         else
             $resposta="ERR";
         fwrite (STDOUT, "{$resposta}\n");
-
-        file_put_contents('/etc/squid/mylog2.log', "\r\n".$ip." ---- ".$input." ---- ".$usuario." ---- ".$resposta." END",FILE_APPEND);
     }
 ?>
