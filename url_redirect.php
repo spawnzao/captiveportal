@@ -27,8 +27,8 @@ while ( $input = fgets(STDIN) ) {
   // Check the requesting IP Address.
   if ( $logado == 0 ) {
     // Check the URL and rewrite it if it matches foo.example.com
-    if ( strpos($temp[0], "captiveportal.seweb.corp") == false ) {
-      $output = "302:http://captiveportal.seweb.corp:81/\n";
+    if ( strpos($temp[0], "192.168.1.1") == false ) {
+      $output = "302:http://192.168.1.1:81/\n";
     }
   }
 
